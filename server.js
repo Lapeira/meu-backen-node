@@ -52,18 +52,26 @@ app.get('/api/projetos', async (req, res) => {
   }
 });
 
-// ROTA POST: Adicionar um novo projeto
+// ROTA POST: Adicionar um novo projeto (AGORA PROTEGIDA!)
 app.post('/api/projetos', async (req, res) => {
+  // 1. O SEGURANÇA À PORTA
+  // Vamos ler o "bilhete VIP" que vem no cabeçalho do pedido
+  const bilheteVip = req.headers.authorization;
+
+  // Se o bilhete não existir ou for diferente da nossa CHAVE_SECRETA...
+  if (bilheteVip !== process.env.CHAVE_SECRETA) {
+    console.log("🚨 Alerta de Intruso! Tentativa de adicionar projeto bloqueada.");
+    return res.status(401).json({ erro: "Acesso Negado! Tu não és o Lapeira." });
+  }
+
+  // 2. SE PASSAR O SEGURANÇA, O CÓDIGO CONTINUA NORMALMENTE
   const { titulo, tecnologia } = req.body;
   
   try {
-    // O 'RETURNING *' é magia do Postgres para devolver a linha que acabou de ser criada
     const resultado = await pool.query(
       'INSERT INTO projetos (titulo, tecnologia) VALUES ($1, $2) RETURNING *',
       [titulo, tecnologia]
     );
-    
-    // Devolvemos o projeto novo (com o ID gerado na nuvem) ao Frontend (React)
     res.status(201).json(resultado.rows[0]);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao inserir projeto" });
