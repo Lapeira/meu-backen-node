@@ -78,6 +78,28 @@ app.post('/api/projetos', async (req, res) => {
   }
 });
 
+
+// ROTA DELETE: Apagar um projeto (PROTEGIDA!)
+// O ":id" no link significa que o frontend vai mandar o número do projeto (ex: /api/projetos/5)
+app.delete('/api/projetos/:id', async (req, res) => {
+  // 1. O SEGURANÇA À PORTA (Não queremos que qualquer pessoa apague as tuas coisas!)
+  const bilheteVip = req.headers.authorization;
+  if (bilheteVip !== process.env.CHAVE_SECRETA) {
+    return res.status(401).json({ erro: "Acesso Negado! Tu não podes apagar." });
+  }
+
+  // 2. DESCOBRIR QUAL É O PROJETO A APAGAR
+  const idDoProjeto = req.params.id; 
+  
+  try {
+    // 3. MANDAR O COMANDO DE DESTRUIÇÃO AO POSTGRESQL
+    await pool.query('DELETE FROM projetos WHERE id = $1', [idDoProjeto]);
+    res.status(200).json({ mensagem: "Projeto apagado com sucesso!" });
+  } catch (erro) {
+    res.status(500).json({ erro: "Erro ao apagar projeto" });
+  }
+});
+
 // 6. LIGAR O SERVIDOR
 // Usa a porta do .env, ou a 4000 se não encontrar
 const PORTA = process.env.PORT || 4000;
